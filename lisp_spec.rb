@@ -43,7 +43,10 @@ def read_lisp_object1(lisp_object_expr)
         arg, first_token, remainder = read_lisp_object1(remainder)
         args << arg if first_token != ')'
       end
+      first_token = nil
       {:type => :s_expr, :value => args}
+    when ')'
+      nil
     else
       {:type => :unknown, :value => first_token}
   end
@@ -77,9 +80,13 @@ describe '#lisp_eval' do
     end
   end
 
-  describe 'CHALLENGE 3', pending: true  do
+  describe 'CHALLENGE 3'  do
     it 'lisp_evaluates nested arithmetic' do
-      lisp_eval('(+ 1 (* 2 3))').should == 7
+      {
+        '(+ 1 (* 2 3))' => 7,
+        '(+ 5 7 -8 (* 2 (+ 5 (* 2 3) 1)))' => 28}.each do |expression, expected|
+        lisp_eval(expression).should == expected
+      end
     end
   end
 
