@@ -1,9 +1,18 @@
 require './spec_helper'
 
+def eval_lisp_object(lisp_object)
+  lisp_object[:value]
+end
+
 def lisp_eval(expression)
-  return true if expression == '#t'
-  return false if expression == '#f'
-  expression.to_i
+  lisp_object = read_lisp_object(expression)
+  eval_lisp_object(lisp_object)
+end
+
+def read_lisp_object(lisp_object_expr)
+  return {:value => true} if lisp_object_expr == '#t'
+  return {:value => false} if lisp_object_expr == '#f'
+  {:value => lisp_object_expr.to_i}
 end
 
 describe '#lisp_eval' do
