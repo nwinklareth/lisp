@@ -1,6 +1,8 @@
 require './spec_helper'
 
 def lisp_eval(expression)
+  return true if expression == '#t'
+  return false if expression == '#f'
   expression.to_i
 end
 
@@ -12,8 +14,10 @@ describe '#lisp_eval' do
       end
     end
 
-    it 'lisp_evaluates booleans', pending: true do
-      lisp_eval('#t').should == true
+    it 'lisp_evaluates booleans' do
+      {'#t' => true, '#f' => false}.each do |expression, expected|
+        lisp_eval(expression).should == expected
+      end
     end
   end
 
