@@ -149,7 +149,7 @@ describe '#lisp_eval' do
     end
   end
 
-  describe 'CHALLENGE 7', pending: true  do
+  describe 'CHALLENGE 7' do
     it 'lisp_evaluates let bindings with a more sophisticated body' do
       lisp_eval('(let (x 3)
                    (+ x 1))').should == 4
