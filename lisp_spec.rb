@@ -2,31 +2,53 @@ require './spec_helper'
 
 def eval_lisp_object(lisp_object)
   if lisp_object[:type]
-    if lisp_object[:value][0][:value] == :+
-      return lisp_object[:value][1..-1].inject(0) do |r_val, arg_lisp_object|
-        r_val + eval_lisp_object(arg_lisp_object)
-      end
-    else
-      return lisp_object[:value][1..-1].inject(1) do |r_val, arg_lisp_object|
-        r_val * eval_lisp_object(arg_lisp_object)
-      end
+    case lisp_object[:type]
+      when :s_expr
+        fn = lisp_object[:value][0]
+        case fn[:type]
+          when :operator
+            if fn[:value] == :+
+              return lisp_object[:value][1..-1].inject(0) do |r_val, arg_lisp_object|
+                r_val + eval_lisp_object(arg_lisp_object)
+              end
+            else
+              return lisp_object[:value][1..-1].inject(1) do |r_val, arg_lisp_object|
+                r_val * eval_lisp_object(arg_lisp_object)
+              end
+            end
+          when :def
+            identifier = lisp_object[:value][1][:value]
+            value = eval_lisp_object(lisp_object[:value][2])
+            return @vars[identifier] = value
+          else
+            return nil
+        end
+      when :identifier
+        return @vars[lisp_object[:value]]
+      else
+        return nil
     end
   end
   lisp_object[:value]
 end
 
 def lisp_eval(expression)
-  lisp_object = read_lisp_object(expression)
-  eval_lisp_object(lisp_object)
+  @vars = {}
+  r_val = nil
+  while expression != ''
+    lisp_object, expression = read_lisp_object(expression)
+    r_val = eval_lisp_object(lisp_object)
+  end
+  r_val
 end
 
 def read_lisp_object(lisp_object_expr)
-  lisp_object, _, _ = read_lisp_object1(lisp_object_expr)
-  lisp_object
+  lisp_object, _, remainder = read_lisp_object1(lisp_object_expr)
+  return lisp_object, remainder
 end
 
 def read_lisp_object1(lisp_object_expr)
-  tokens = /(\(|[^\s\(\)]+|\))(.*)/m.match(lisp_object_expr)
+  tokens = /\s*(\(|[^\s\(\)]+|\))(.*)/m.match(lisp_object_expr)
   first_token, remainder = tokens[1], tokens[2]
   lisp_object = case first_token
     when /[-+]?\d/
@@ -47,6 +69,10 @@ def read_lisp_object1(lisp_object_expr)
       {:type => :s_expr, :value => args}
     when ')'
       nil
+    when 'def'
+      {:type => :def}
+    when /\w/
+      {:type => :identifier, :value => first_token}
     else
       {:type => :unknown, :value => first_token}
   end
@@ -97,10 +123,14 @@ describe '#lisp_eval' do
     end
   end
 
-  describe 'CHALLENGE 5', pending: true  do
+  describe 'CHALLENGE 5' do
     it 'lisp_evaluates top-level defs' do
       lisp_eval('(def x 3)
                  (+ x 1)').should == 4
+      lisp_eval('(def x 3)(def x 7)
+                 (+ x 1)').should == 8
+      lisp_eval('(def x 3)(def y 7)
+                 (+ x y)').should == 10
     end
   end
 
