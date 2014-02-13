@@ -1,45 +1,44 @@
 require './spec_helper'
-require './lisp'
-
+require './orig-hack-night-lisp-solution'
 
 describe '#lisp_eval' do
-  describe "CHALLENGE 1", pending: true do
-    it "lisp_evaluates numbers" do
+  describe 'CHALLENGE 1' do
+    it 'lisp_evaluates numbers' do
       lisp_eval("1").should == 1
     end
 
-    it "lisp_evaluates booleans" do
-      lisp_eval("#t").should == true
+    it 'lisp_evaluates booleans' do
+      lisp_eval('#t').should == true
     end
   end
 
-  describe "CHALLENGE 2", pending: true  do
-    it "lisp_evaluates addition" do
+  describe 'CHALLENGE 2' do
+    it 'lisp_evaluates addition' do
       lisp_eval("(+ 1 2)").should == 3
     end
 
-    it "lisp_evaluates multiplication" do
+    it 'lisp_evaluates multiplication' do
       lisp_eval("(* 2 2 3)").should == 12
     end
   end
 
-  describe "CHALLENGE 3", pending: true  do
-    it "lisp_evaluates nested arithmetic" do
+  describe 'CHALLENGE 3'  do
+    it 'lisp_evaluates nested arithmetic' do
       lisp_eval("(+ 1 (* 2 3))").should == 7
     end
   end
 
-  describe "CHALLENGE 4", pending: true  do
-    it "lisp_evaluates conditionals" do
-      lisp_eval("(if #t 1 2)").should == 1
-      lisp_eval("(if #f #t #f)").should == false
+  describe 'CHALLENGE 4'  do
+    it 'lisp_evaluates conditionals' do
+      lisp_eval('(if #t 1 2)').should == 1
+      lisp_eval('(if #f #t #f)').should == false
     end
   end
 
-  describe "CHALLENGE 5", pending: true  do
-    it "lisp_evaluates top-level defs" do
-      lisp_eval("(def x 3)
-                 (+ x 1)").should == 4
+  describe 'CHALLENGE 5'  do
+    it 'lisp_evaluates top-level defs' do
+      lisp_eval('(def x 3)
+                 (+ x 1)').should == 4
     end
   end
 
