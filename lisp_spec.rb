@@ -2,7 +2,9 @@ require './spec_helper'
 
 def eval_lisp_object(lisp_object)
   if lisp_object[:type]
-    return lisp_object[:value][1].to_i + lisp_object[:value][2].to_i
+    return lisp_object[:value][1..-1].inject(0) do |r_val, arg_lisp_object|
+      r_val + eval_lisp_object(arg_lisp_object)
+    end
   end
   lisp_object[:value]
 end
@@ -13,12 +15,25 @@ def lisp_eval(expression)
 end
 
 def read_lisp_object(lisp_object_expr)
-  return {:value => true} if lisp_object_expr == '#t'
-  return {:value => false} if lisp_object_expr == '#f'
-  if lisp_object_expr[0] == '('
-    return {:type => :s_expr, :value => lisp_object_expr[1..-2].split}
+  lisp_object, _, _ = read_lisp_object1(lisp_object_expr)
+  lisp_object
+end
+
+def read_lisp_object1(lisp_object_expr)
+  tokens = /(\(|[^\s\(\)]+|\))(.*)/m.match(lisp_object_expr)
+  first_token, remainder = tokens[1], tokens[2]
+  return {:value => true}, first_token, remainder if first_token == '#t'
+  return {:value => false}, first_token, remainder if first_token == '#f'
+  if first_token == '('
+    args = []
+    while first_token != ')'
+      arg, first_token, remainder = read_lisp_object1(remainder)
+      args << arg if first_token != ')'
+    end
+    return {:type => :s_expr, :value => args}, first_token, remainder
   end
-  {:value => lisp_object_expr.to_i}
+  return {:type => :operator, :value => :+}, first_token, remainder if first_token == '+'
+  return {:value => lisp_object_expr.to_i}, first_token, remainder
 end
 
 describe '#lisp_eval' do
@@ -38,13 +53,9 @@ describe '#lisp_eval' do
 
   describe 'CHALLENGE 2' do
     it 'lisp_evaluates addition' do
-      {'(+ 1 2)' => 3, '(+ 1 5)' => 6}.each do |expression, expected|
+      {'(+ 1 2)' => 3, '(+ 1 5)' => 6, '(+ 5 7 -8)' => 4}.each do |expression, expected|
         lisp_eval(expression).should == expected
       end
-    end
-
-    it 'lisp_evaluates addition' do
-      lisp_eval('(+ 1 5)').should == 6
     end
 
     it 'lisp_evaluates multiplication', pending: true do
