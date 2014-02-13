@@ -20,6 +20,11 @@ def eval_lisp_object(lisp_object)
             identifier = lisp_object[:value][1][:value]
             value = eval_lisp_object(lisp_object[:value][2])
             return @vars[identifier] = value
+          when :let
+            identifier = lisp_object[:value][1][:value][0][:value]
+            value = eval_lisp_object(lisp_object[:value][1][:value][1])
+            @vars[identifier] = value
+            return eval_lisp_object(lisp_object[:value][2])
           else
             return nil
         end
@@ -50,32 +55,35 @@ end
 def read_lisp_object1(lisp_object_expr)
   tokens = /\s*(\(|[^\s\(\)]+|\))(.*)/m.match(lisp_object_expr)
   first_token, remainder = tokens[1], tokens[2]
-  lisp_object = case first_token
-    when /[-+]?\d/
-      {:value => lisp_object_expr.to_i}
-    when '+', '*'
-      {:type => :operator, :value => first_token.to_sym}
-    when '#t'
-      {:value => true}
-    when '#f'
-      {:value => false}
-    when '('
-      args = []
-      while first_token != ')'
-        arg, first_token, remainder = read_lisp_object1(remainder)
-        args << arg if first_token != ')'
+  lisp_object =
+      case first_token
+        when /[-+]?\d/
+          {:value => lisp_object_expr.to_i}
+        when '+', '*'
+          {:type => :operator, :value => first_token.to_sym}
+        when '#t'
+          {:value => true}
+        when '#f'
+          {:value => false}
+        when '('
+          args = []
+          while first_token != ')'
+            arg, first_token, remainder = read_lisp_object1(remainder)
+            args << arg if first_token != ')'
+          end
+          first_token = nil
+          {:type => :s_expr, :value => args}
+        when ')'
+          nil
+        when 'let'
+          {:type => :let}
+        when 'def'
+          {:type => :def}
+        when /\w/
+          {:type => :identifier, :value => first_token}
+        else
+          {:type => :unknown, :value => first_token}
       end
-      first_token = nil
-      {:type => :s_expr, :value => args}
-    when ')'
-      nil
-    when 'def'
-      {:type => :def}
-    when /\w/
-      {:type => :identifier, :value => first_token}
-    else
-      {:type => :unknown, :value => first_token}
-  end
   return lisp_object, first_token, remainder
 end
 
@@ -134,7 +142,7 @@ describe '#lisp_eval' do
     end
   end
 
-  describe 'CHALLENGE 6', pending: true  do
+  describe 'CHALLENGE 6'  do
     it 'lisp_evaluates simple `let` bindings' do
       lisp_eval('(let (x 3)
                    x)').should == 3
