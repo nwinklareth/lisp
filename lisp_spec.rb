@@ -2,8 +2,14 @@ require './spec_helper'
 
 def eval_lisp_object(lisp_object)
   if lisp_object[:type]
-    return lisp_object[:value][1..-1].inject(0) do |r_val, arg_lisp_object|
-      r_val + eval_lisp_object(arg_lisp_object)
+    if lisp_object[:value][0][:value] == :+
+      return lisp_object[:value][1..-1].inject(0) do |r_val, arg_lisp_object|
+        r_val + eval_lisp_object(arg_lisp_object)
+      end
+    else
+      return lisp_object[:value][1..-1].inject(1) do |r_val, arg_lisp_object|
+        r_val * eval_lisp_object(arg_lisp_object)
+      end
     end
   end
   lisp_object[:value]
@@ -22,18 +28,26 @@ end
 def read_lisp_object1(lisp_object_expr)
   tokens = /(\(|[^\s\(\)]+|\))(.*)/m.match(lisp_object_expr)
   first_token, remainder = tokens[1], tokens[2]
-  return {:value => true}, first_token, remainder if first_token == '#t'
-  return {:value => false}, first_token, remainder if first_token == '#f'
-  if first_token == '('
-    args = []
-    while first_token != ')'
-      arg, first_token, remainder = read_lisp_object1(remainder)
-      args << arg if first_token != ')'
-    end
-    return {:type => :s_expr, :value => args}, first_token, remainder
+  lisp_object = case first_token
+    when /[-+]?\d/
+      {:value => lisp_object_expr.to_i}
+    when '+', '*'
+      {:type => :operator, :value => first_token.to_sym}
+    when '#t'
+      {:value => true}
+    when '#f'
+      {:value => false}
+    when '('
+      args = []
+      while first_token != ')'
+        arg, first_token, remainder = read_lisp_object1(remainder)
+        args << arg if first_token != ')'
+      end
+      {:type => :s_expr, :value => args}
+    else
+      {:type => :unknown, :value => first_token}
   end
-  return {:type => :operator, :value => :+}, first_token, remainder if first_token == '+'
-  return {:value => lisp_object_expr.to_i}, first_token, remainder
+  return lisp_object, first_token, remainder
 end
 
 describe '#lisp_eval' do
@@ -58,7 +72,7 @@ describe '#lisp_eval' do
       end
     end
 
-    it 'lisp_evaluates multiplication', pending: true do
+    it 'lisp_evaluates multiplication' do
       lisp_eval('(* 2 2 3)').should == 12
     end
   end
