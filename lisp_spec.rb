@@ -1,7 +1,9 @@
 require './spec_helper'
 
 def eval_lisp_object(lisp_object)
-  return 3 if lisp_object[:type]
+  if lisp_object[:type]
+    return lisp_object[:value][1].to_i + lisp_object[:value][2].to_i
+  end
   lisp_object[:value]
 end
 
@@ -13,7 +15,9 @@ end
 def read_lisp_object(lisp_object_expr)
   return {:value => true} if lisp_object_expr == '#t'
   return {:value => false} if lisp_object_expr == '#f'
-  return {:type => :s_expr} if lisp_object_expr[0] == '('
+  if lisp_object_expr[0] == '('
+    return {:type => :s_expr, :value => lisp_object_expr[1..-2].split}
+  end
   {:value => lisp_object_expr.to_i}
 end
 
@@ -34,7 +38,13 @@ describe '#lisp_eval' do
 
   describe 'CHALLENGE 2' do
     it 'lisp_evaluates addition' do
-      lisp_eval('(+ 1 2)').should == 3
+      {'(+ 1 2)' => 3, '(+ 1 5)' => 6}.each do |expression, expected|
+        lisp_eval(expression).should == expected
+      end
+    end
+
+    it 'lisp_evaluates addition' do
+      lisp_eval('(+ 1 5)').should == 6
     end
 
     it 'lisp_evaluates multiplication', pending: true do
