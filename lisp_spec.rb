@@ -6,9 +6,39 @@ def add_operator(lisp_object)
   end
 end
 
+def build_fn_args(fn_args, fn_arg_values)
+  args = []
+  fn_args.each_with_index do |arg_name, index|
+    args << arg_name << fn_arg_values[index]
+  end
+  s_expression_object(args)
+end
+
+def call_function(lisp_object)
+  fn = @fns[lisp_object[:value][0][:value]]
+  let_context = @let_vars
+  @let_vars = [{}]
+  function_call = [
+      let_lisp_object,
+      build_fn_args(fn[:fn_args][:value], [lisp_object[:value][1]]),
+      fn[:fn_body]
+  ]
+  r_val = eval_lisp_object(s_expression_object(function_call))
+  @let_vars = let_context
+  r_val
+end
+
 def def_operator(lisp_object)
   identifier = lisp_object[:value][1][:value]
   @vars[identifier] = eval_lisp_object(lisp_object[:value][2])
+end
+
+def defn_operator(lisp_object)
+  defn_expression = lisp_object[:value]
+  @fns[defn_expression[1][:value]] = {
+    :fn_args => defn_expression[2],
+    :fn_body => defn_expression[3]
+  }
 end
 
 def eval_lisp_object(lisp_object)
@@ -25,6 +55,10 @@ def eval_lisp_object(lisp_object)
             end
           when :def
             return def_operator(lisp_object)
+          when :defn
+            return defn_operator(lisp_object)
+          when :function_call
+            return call_function(lisp_object)
           when :if
             return if_operator(lisp_object)
           when :let
@@ -49,6 +83,10 @@ def if_operator(lisp_object)
   eval_lisp_object(if_expression[if_expression[1][:value] ? 2 : 3])
 end
 
+def let_lisp_object
+  {:type => :let}
+end
+
 def let_operator(lisp_object)
   @let_vars.unshift({})
   var_args = lisp_object[:value][1][:value]
@@ -66,6 +104,7 @@ end
 def lisp_eval(expression)
   @let_vars = [{}]
   @vars = {}
+  @fns = {}
   r_val = nil
   while expression != ''
     lisp_object, expression = read_lisp_object(expression)
@@ -90,7 +129,7 @@ def read_lisp_object1(lisp_object_expr)
   first_token, remainder = tokens[1], tokens[2]
   lisp_object =
       case first_token
-        when /[-+]?\d/
+        when /^[\-\+]?\d+$/
           {:value => lisp_object_expr.to_i}
         when '+', '*'
           {:type => :operator, :value => first_token.to_sym}
@@ -105,21 +144,27 @@ def read_lisp_object1(lisp_object_expr)
             args << arg if first_token != ')'
           end
           first_token = nil
-          {:type => :s_expr, :value => args}
+          s_expression_object(args)
         when ')'
           nil
         when 'let'
-          {:type => :let}
+          let_lisp_object
         when 'def'
           {:type => :def}
+        when 'defn'
+          {:type => :defn}
         when 'if'
           {:type => :if}
-        when /\w/
-          {:type => :identifier, :value => first_token}
+        when /^\w+$/
+          {:type => @fns.has_key?(first_token) ? :function_call : :identifier, :value => first_token}
         else
           {:type => :unknown, :value => first_token}
       end
   return lisp_object, first_token, remainder
+end
+
+def s_expression_object(args)
+  {:type => :s_expr, :value => args}
 end
 
 describe '#lisp_eval' do
@@ -233,7 +278,7 @@ describe '#lisp_eval' do
     end
   end
 
-  describe 'CHALLENGE 9', pending: true  do
+  describe 'CHALLENGE 9'  do
     it 'lisp_evaluates function definitions with single variables' do
       code = '(defn add2 (x)
                 (+ x 2))
