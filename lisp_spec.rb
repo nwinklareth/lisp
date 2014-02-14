@@ -32,6 +32,7 @@ def eval_lisp_object(lisp_object)
             return nil
         end
       when :identifier
+        return @let_vars[lisp_object[:value]] if @let_vars.has_key?(lisp_object[:value])
         return @vars[lisp_object[:value]]
       else
         return nil
@@ -41,14 +42,17 @@ def eval_lisp_object(lisp_object)
 end
 
 def let_operator(lisp_object)
+  @let_vars = {}
   var_args = lisp_object[:value][1][:value]
   while var_args != []
     identifier = var_args[0][:value]
     value = eval_lisp_object(var_args[1])
-    @vars[identifier] = value
+    @let_vars[identifier] = value
     var_args = var_args[2..-1]
   end
-  eval_lisp_object(lisp_object[:value][2])
+  r_val = eval_lisp_object(lisp_object[:value][2])
+  @let_vars = {}
+  r_val
 end
 
 def multiply_operator(lisp_object)
@@ -58,6 +62,7 @@ def multiply_operator(lisp_object)
 end
 
 def lisp_eval(expression)
+  @let_vars = {}
   @vars = {}
   r_val = nil
   while expression != ''
@@ -181,6 +186,16 @@ describe '#lisp_eval' do
       lisp_eval('(let (x 3
                        y 4)
                    (+ x y))').should == 7
+    end
+  end
+
+  describe 'CHALLENGE 8b'  do
+    it 'lisp_evaluates let bindings are no longer present after let expression is completed' do
+      lisp_eval('(def x 8)
+                 (let (x 3
+                       y 4)
+                   (def y (+ x y)))
+                   (+ x y)').should == 15
     end
   end
 
