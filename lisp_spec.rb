@@ -32,7 +32,9 @@ def eval_lisp_object(lisp_object)
             return nil
         end
       when :identifier
-        return @let_vars[-1][lisp_object[:value]] if @let_vars[-1].has_key?(lisp_object[:value])
+        @let_vars.each do |let_env|
+          return let_env[lisp_object[:value]] if let_env.has_key?(lisp_object[:value])
+        end
         return @vars[lisp_object[:value]]
       else
         return nil
@@ -42,16 +44,16 @@ def eval_lisp_object(lisp_object)
 end
 
 def let_operator(lisp_object)
-  @let_vars.push({})
+  @let_vars.unshift({})
   var_args = lisp_object[:value][1][:value]
   while var_args != []
     identifier = var_args[0][:value]
     value = eval_lisp_object(var_args[1])
-    @let_vars[-1][identifier] = value
+    @let_vars[0][identifier] = value
     var_args = var_args[2..-1]
   end
   r_val = eval_lisp_object(lisp_object[:value][2])
-  @let_vars.pop
+  @let_vars.shift
   r_val
 end
 
@@ -212,6 +214,14 @@ describe '#lisp_eval' do
       lisp_eval('(let (x 3
                        y 4)
                    (+ (let (x 8 y 5) (+ x y)) y))').should == 17
+    end
+  end
+
+  describe 'CHALLENGE 8d'  do
+    it 'lisp_evaluates let bindings nest and selects' do
+      lisp_eval('(def x 6)
+                 (let (y 4)
+                   (let (z 9) (+ x y z)))').should == 19
     end
   end
 
