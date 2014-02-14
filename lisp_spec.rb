@@ -1,5 +1,17 @@
 require './spec_helper'
 
+def add_operator(lisp_object)
+  lisp_object[:value][1..-1].inject(0) do |r_val, arg_lisp_object|
+    r_val + eval_lisp_object(arg_lisp_object)
+  end
+end
+
+def def_operator(lisp_object)
+  identifier = lisp_object[:value][1][:value]
+  value = eval_lisp_object(lisp_object[:value][2])
+  @vars[identifier] = value
+end
+
 def eval_lisp_object(lisp_object)
   if lisp_object[:type]
     case lisp_object[:type]
@@ -8,23 +20,14 @@ def eval_lisp_object(lisp_object)
         case fn[:type]
           when :operator
             if fn[:value] == :+
-              return lisp_object[:value][1..-1].inject(0) do |r_val, arg_lisp_object|
-                r_val + eval_lisp_object(arg_lisp_object)
-              end
+              return add_operator(lisp_object)
             else
-              return lisp_object[:value][1..-1].inject(1) do |r_val, arg_lisp_object|
-                r_val * eval_lisp_object(arg_lisp_object)
-              end
+              return multiply_operator(lisp_object)
             end
           when :def
-            identifier = lisp_object[:value][1][:value]
-            value = eval_lisp_object(lisp_object[:value][2])
-            return @vars[identifier] = value
+            return def_operator(lisp_object)
           when :let
-            identifier = lisp_object[:value][1][:value][0][:value]
-            value = eval_lisp_object(lisp_object[:value][1][:value][1])
-            @vars[identifier] = value
-            return eval_lisp_object(lisp_object[:value][2])
+            return let_operator(lisp_object)
           else
             return nil
         end
@@ -35,6 +38,23 @@ def eval_lisp_object(lisp_object)
     end
   end
   lisp_object[:value]
+end
+
+def let_operator(lisp_object)
+  var_args = lisp_object[:value][1][:value]
+  while var_args != []
+    identifier = var_args[0][:value]
+    value = eval_lisp_object(var_args[1])
+    @vars[identifier] = value
+    var_args = var_args[2..-1]
+  end
+  eval_lisp_object(lisp_object[:value][2])
+end
+
+def multiply_operator(lisp_object)
+  lisp_object[:value][1..-1].inject(1) do |r_val, arg_lisp_object|
+    r_val * eval_lisp_object(arg_lisp_object)
+  end
 end
 
 def lisp_eval(expression)
@@ -156,7 +176,7 @@ describe '#lisp_eval' do
     end
   end
 
-  describe 'CHALLENGE 8', pending: true  do
+  describe 'CHALLENGE 8'  do
     it 'lisp_evaluates let bindings with multiple variables' do
       lisp_eval('(let (x 3
                        y 4)
