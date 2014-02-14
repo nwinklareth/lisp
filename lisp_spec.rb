@@ -20,7 +20,7 @@ def call_function(lisp_object)
   @let_vars = [{}]
   function_call = [
       let_lisp_object,
-      build_fn_args(fn[:fn_args][:value], [lisp_object[:value][1]]),
+      build_fn_args(fn[:fn_args][:value], lisp_object[:value][1..-1]),
       fn[:fn_body]
   ]
   r_val = eval_lisp_object(s_expression_object(function_call))
@@ -80,7 +80,7 @@ end
 
 def if_operator(lisp_object)
   if_expression = lisp_object[:value]
-  eval_lisp_object(if_expression[if_expression[1][:value] ? 2 : 3])
+  eval_lisp_object(if_expression[eval_lisp_object(if_expression[1]) ? 2 : 3])
 end
 
 def let_lisp_object
@@ -289,7 +289,7 @@ describe '#lisp_eval' do
     end
   end
 
-  describe 'CHALLENGE 10', pending: true  do
+  describe 'CHALLENGE 10'  do
     it 'lisp_evaluates function definitions with multiple variables' do
       code = '(defn maybeAdd2 (bool x)
                 (if bool
