@@ -8,8 +8,7 @@ end
 
 def def_operator(lisp_object)
   identifier = lisp_object[:value][1][:value]
-  value = eval_lisp_object(lisp_object[:value][2])
-  @vars[identifier] = value
+  @vars[identifier] = eval_lisp_object(lisp_object[:value][2])
 end
 
 def eval_lisp_object(lisp_object)
@@ -26,6 +25,8 @@ def eval_lisp_object(lisp_object)
             end
           when :def
             return def_operator(lisp_object)
+          when :if
+            return if_operator(lisp_object)
           when :let
             return let_operator(lisp_object)
           else
@@ -41,6 +42,11 @@ def eval_lisp_object(lisp_object)
     end
   end
   lisp_object[:value]
+end
+
+def if_operator(lisp_object)
+  if_expression = lisp_object[:value]
+  eval_lisp_object(if_expression[if_expression[1][:value] ? 2 : 3])
 end
 
 def let_operator(lisp_object)
@@ -106,6 +112,8 @@ def read_lisp_object1(lisp_object_expr)
           {:type => :let}
         when 'def'
           {:type => :def}
+        when 'if'
+          {:type => :if}
         when /\w/
           {:type => :identifier, :value => first_token}
         else
@@ -151,7 +159,7 @@ describe '#lisp_eval' do
     end
   end
 
-  describe 'CHALLENGE 4', pending: true  do
+  describe 'CHALLENGE 4'  do
     it 'lisp_evaluates conditionals' do
       lisp_eval('(if #t 1 2)').should == 1
       lisp_eval('(if #f #t #f)').should == false
