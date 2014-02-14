@@ -32,7 +32,7 @@ def eval_lisp_object(lisp_object)
             return nil
         end
       when :identifier
-        return @let_vars[lisp_object[:value]] if @let_vars.has_key?(lisp_object[:value])
+        return @let_vars[-1][lisp_object[:value]] if @let_vars[-1].has_key?(lisp_object[:value])
         return @vars[lisp_object[:value]]
       else
         return nil
@@ -42,27 +42,21 @@ def eval_lisp_object(lisp_object)
 end
 
 def let_operator(lisp_object)
-  @let_vars = {}
+  @let_vars.push({})
   var_args = lisp_object[:value][1][:value]
   while var_args != []
     identifier = var_args[0][:value]
     value = eval_lisp_object(var_args[1])
-    @let_vars[identifier] = value
+    @let_vars[-1][identifier] = value
     var_args = var_args[2..-1]
   end
   r_val = eval_lisp_object(lisp_object[:value][2])
-  @let_vars = {}
+  @let_vars.pop
   r_val
 end
 
-def multiply_operator(lisp_object)
-  lisp_object[:value][1..-1].inject(1) do |r_val, arg_lisp_object|
-    r_val * eval_lisp_object(arg_lisp_object)
-  end
-end
-
 def lisp_eval(expression)
-  @let_vars = {}
+  @let_vars = [{}]
   @vars = {}
   r_val = nil
   while expression != ''
@@ -70,6 +64,12 @@ def lisp_eval(expression)
     r_val = eval_lisp_object(lisp_object)
   end
   r_val
+end
+
+def multiply_operator(lisp_object)
+  lisp_object[:value][1..-1].inject(1) do |r_val, arg_lisp_object|
+    r_val * eval_lisp_object(arg_lisp_object)
+  end
 end
 
 def read_lisp_object(lisp_object_expr)
@@ -196,6 +196,22 @@ describe '#lisp_eval' do
                        y 4)
                    (def y (+ x y)))
                    (+ x y)').should == 15
+    end
+  end
+
+  describe 'CHALLENGE 8c'  do
+    it 'lisp_evaluates let bindings nest' do
+      lisp_eval('(let (x 3
+                       y 4)
+                   (+ (let (x 8 y 5) (+ x y)) y))').should == 17
+    end
+  end
+
+  describe 'CHALLENGE 8c'  do
+    it 'lisp_evaluates let bindings nest and selects' do
+      lisp_eval('(let (x 3
+                       y 4)
+                   (+ (let (x 8 y 5) (+ x y)) y))').should == 17
     end
   end
 
